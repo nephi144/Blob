@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Blob Pet Check-In</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #dce8f7 0%, #e8e0f5 50%, #d8eef2 100%);
+  font-family: system-ui, -apple-system, sans-serif;
+  padding: 2rem 1rem;
+}
+#card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(100,100,160,0.13), 0 2px 8px rgba(100,100,160,0.07);
+  padding: 2.25rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.scene { display: none; flex-direction: column; align-items: center; width: 100%; }
+.scene.active { display: flex; animation: fi 0.4s ease; }
+@keyframes fi { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+h2 { font-size: 18px; font-weight: 500; color: #2d2d4e; text-align: center; margin-bottom: 6px; }
+.sub { font-size: 14px; color: #7a7a9a; text-align: center; margin-bottom: 1.5rem; line-height: 1.5; }
+.ql { font-size: 15px; font-weight: 500; color: #2d2d4e; text-align: center; margin-bottom: 1rem; }
+.opts { display: flex; flex-direction: column; gap: 9px; width: 100%; margin-bottom: 1.25rem; }
+.opt { padding: 11px 15px; border: 1px solid #e0e0ef; border-radius: 12px; font-size: 14px; color: #3a3a5c; background: #fafafa; cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; }
+.opt:hover { background: #f0f0f8; border-color: #c0c0e0; }
+.opt.sel-calm     { border: 1.5px solid #5ba3c9; background: #eaf4fb; color: #1a5a80; }
+.opt.sel-stressed { border: 1.5px solid #d07050; background: #fef0e8; color: #8a3a10; }
+.opt.sel-tired    { border: 1.5px solid #8a9098; background: #f0f1f3; color: #404550; }
+.dots { display: flex; gap: 7px; margin-bottom: 1.5rem; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #e0dff0; transition: background 0.3s; }
+.dot.on { background: #8b85d4; }
+.btn { display: inline-block; padding: 11px 30px; border-radius: 99px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 0.15s, opacity 0.15s; }
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.97); }
+.btn-blue { background: #7b9ee8; color: white; }
+.btn-teal { background: #6bbfbf; color: white; }
+.blob-wrap { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; margin: 1rem 0; }
+.blob { border-radius: 50%; transition: all 0.8s cubic-bezier(0.34,1.4,0.64,1); }
+.bc { width:116px; height:116px; background:#85c1e9; animation: pc 3s ease-in-out infinite; }
+.bs { width:86px; height:86px; background:#f0a07a; border-radius:44% 56% 47% 53%/53% 47% 56% 44%; animation: sh 0.38s ease-in-out infinite; }
+.bt { width:136px; height:68px; background:#adb3ba; animation: dr 4s ease-in-out infinite; }
+@keyframes pc { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+@keyframes sh { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px) rotate(-1deg)} 75%{transform:translateX(3px) rotate(1deg)} }
+@keyframes dr { 0%,100%{transform:scaleX(1) scaleY(1)} 50%{transform:scaleX(1.06) scaleY(0.93)} }
+.eyes { position:absolute; display:flex; gap:18px; pointer-events:none; }
+.eye { width:8px; height:8px; border-radius:50%; background:white; opacity:0.85; }
+.eye.te { height:4px; border-radius:4px; margin-top:2px; }
+.eye.se { width:7px; height:7px; }
+.slbl { font-size:12px; font-weight:500; padding:3px 13px; border-radius:99px; margin-bottom:10px; letter-spacing:0.03em; }
+.lc { background:#d6eef7; color:#1a6e99; }
+.ls { background:#fde8d8; color:#a04010; }
+.lt { background:#e4e6e9; color:#4a5060; }
+.bmsg { font-size:14px; color:#7a7a9a; text-align:center; max-width:280px; margin-bottom:1.5rem; font-style:italic; line-height:1.6; }
+.divider { width:40px; height:2px; background:#eeeef8; border-radius:99px; margin-bottom:1.25rem; }
+.breath-area { position:relative; width:200px; height:200px; display:flex; align-items:center; justify-content:center; margin:0.5rem 0 0.25rem; }
+.ring-outer { position:absolute; width:200px; height:200px; border-radius:50%; border:1.5px solid #c8d8f0; }
+.ring-mid { position:absolute; border-radius:50%; border:1.5px solid #d8e8f8; transition:width 1.8s ease-in-out, height 1.8s ease-in-out; }
+.breath-blob { border-radius:50%; background:#85c1e9; cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative; transition:width 1.8s ease-in-out, height 1.8s ease-in-out; }
+.breath-label { font-size:22px; font-weight:500; color:#5a7ec0; letter-spacing:0.02em; margin-bottom:2px; min-height:32px; }
+.breath-sub { font-size:13px; color:#9a9ab8; margin-bottom:1rem; min-height:18px; }
+.bar-wrap { width:100%; height:5px; background:#eeeef8; border-radius:99px; overflow:hidden; margin-bottom:1rem; }
+.bar { height:100%; background:linear-gradient(90deg,#9ec8e8,#8b85d4); border-radius:99px; width:0%; transition:width 0.6s ease; }
+.cycle-count { font-size:13px; color:#9a9ab8; margin-bottom:0.5rem; }
+.happy-face { position:absolute; top:50%; left:50%; transform:translate(-50%,-62%); display:flex; flex-direction:column; align-items:center; gap:7px; pointer-events:none; }
+.happy-eyes { display:flex; gap:20px; }
+.happy-eye { width:9px; height:9px; border-radius:50%; background:white; opacity:0.9; }
+.happy-mouth { width:28px; height:14px; border-radius:0 0 14px 14px; border:2.5px solid white; border-top:none; opacity:0.85; }
+@keyframes popin { 0%{transform:scale(0.7);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+.happy-blob-wrap { display:flex; flex-direction:column; align-items:center; margin:1.25rem 0 0.5rem; animation: popin 0.6s cubic-bezier(0.34,1.4,0.64,1); }
+.happy-blob { width:120px; height:120px; border-radius:50%; background:#85c1e9; animation: pc 3s ease-in-out infinite; position:relative; }
+.happy-msg { font-size:15px; color:#3a3a5c; text-align:center; max-width:270px; line-height:1.7; margin:1rem 0 0.5rem; font-weight:500; }
+.happy-sub { font-size:13px; color:#9a9ab8; text-align:center; max-width:260px; line-height:1.55; margin-bottom:1.5rem; }
+</style>
+</head>
+<body>
+<div id="card">
+
+  <div class="scene active" id="s1">
+    <h2>How are you doing right now?</h2>
+    <p class="sub">A quick check-in — just for you.</p>
+    <div class="dots"><div class="dot" id="d0"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div></div>
+    <div id="qa"></div>
+    <button class="btn btn-blue" id="nxt" style="display:none;">Continue</button>
+  </div>
+
+  <div class="scene" id="s2">
+    <h2>Meet your little friend</h2>
+    <p class="sub">They're feeling just like you.</p>
+    <div class="blob-wrap">
+      <div class="blob" id="blob"></div>
+      <div class="eyes" id="eyes" style="top:50%;left:50%;transform:translate(-50%,-58%);position:absolute;"></div>
+    </div>
+    <div class="slbl" id="slbl"></div>
+    <p class="bmsg" id="bmsg"></p>
+    <div class="divider"></div>
+    <button class="btn btn-teal" id="go-calm">Breathe together</button>
+  </div>
+
+  <div class="scene" id="s3">
+    <h2>Calm together</h2>
+    <p class="sub" id="s3sub">Follow the blob — breathe in as it grows, out as it shrinks.</p>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+    <div class="breath-label" id="blbl">Ready</div>
+    <div class="breath-sub" id="bsub">Tap to begin</div>
+    <div id="breath-interact" style="display:flex;flex-direction:column;align-items:center;">
+      <div class="breath-area">
+        <div class="ring-outer"></div>
+        <div class="ring-mid" id="ring-mid" style="width:120px;height:120px;"></div>
+        <div class="breath-blob" id="cb" style="width:80px;height:80px;">
+          <div class="eyes" style="top:50%;left:50%;transform:translate(-50%,-58%);position:absolute;gap:12px;">
+            <div class="eye"></div><div class="eye"></div>
+          </div>
+        </div>
+      </div>
+      <div class="cycle-count" id="cyc">0 of 4 breaths</div>
+    </div>
+    <div id="happy-end" style="display:none;flex-direction:column;align-items:center;">
+      <div class="happy-blob-wrap">
+        <div class="happy-blob" id="happy-blob">
+          <div class="happy-face">
+            <div class="happy-eyes">
+              <div class="happy-eye"></div>
+              <div class="happy-eye"></div>
+            </div>
+            <div class="happy-mouth"></div>
+          </div>
+        </div>
+      </div>
+      <p class="happy-msg">You helped your pet feel calm and safe.</p>
+      <p class="happy-sub">Taking a moment to breathe is an act of kindness — toward your pet, and toward yourself.</p>
+      <button class="btn btn-blue" id="again">Start over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+const Qs=[
+  {q:"How's your body feeling right now?",opts:[{t:"Tense or restless",v:"stressed"},{t:"Tired and drained",v:"tired"},{t:"Relaxed and okay",v:"calm"}]},
+  {q:"What's on your mind today?",opts:[{t:"So many things at once",v:"stressed"},{t:"Nothing — my brain's foggy",v:"tired"},{t:"Things feel manageable",v:"calm"}]},
+  {q:"How much energy do you have?",opts:[{t:"Running on fumes",v:"tired"},{t:"Buzzing but scattered",v:"stressed"},{t:"Decent, feeling okay",v:"calm"}]}
+];
+const SD={
+  calm:{bc:"bc",ec:"",lbl:"calm",lc:"lc",msg:"Your friend feels settled and at ease, holding space for you."},
+  stressed:{bc:"bs",ec:"se",lbl:"stressed",lc:"ls",msg:"Your friend feels jittery and tight — it senses the weight you're carrying."},
+  tired:{bc:"bt",ec:"te",lbl:"tired",lc:"lt",msg:"Your friend feels heavy and slow — like it just needs to rest."}
+};
+let qi=0, ans=[];
+const TOTAL=4;
+let cycles=0, phase='idle', phaseTimer=null;
+
+function show(id){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function renderQ(){
+  const q=Qs[qi];
+  document.getElementById('qa').innerHTML=`<p class="ql">${q.q}</p><div class="opts">${q.opts.map((o,i)=>`<button class="opt" data-i="${i}" data-v="${o.v}">${o.t}</button>`).join('')}</div>`;
+  document.getElementById('nxt').style.display='none';
+  [0,1,2].forEach(i=>document.getElementById('d'+i).classList.toggle('on',i<qi));
+  document.querySelectorAll('.opt').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.opt').forEach(b=>b.className='opt');
+      this.classList.add('sel-'+this.dataset.v);
+      ans[qi]=this.dataset.v;
+      document.getElementById('nxt').style.display='block';
+    });
+  });
+}
+
+function getState(){
+  const c={stressed:0,tired:0,calm:0};
+  ans.forEach(a=>c[a]++);
+  if(c.stressed>=c.tired&&c.stressed>=c.calm)return'stressed';
+  if(c.tired>=c.stressed&&c.tired>=c.calm)return'tired';
+  return'calm';
+}
+
+function goReflect(){
+  show('s2');
+  const st=getState(),d=SD[st];
+  document.getElementById('blob').className='blob '+d.bc;
+  const ey=document.getElementById('eyes');
+  ey.innerHTML=`<div class="eye ${d.ec}"></div><div class="eye ${d.ec}"></div>`;
+  const sl=document.getElementById('slbl');
+  sl.textContent=d.lbl; sl.className='slbl '+d.lc;
+  document.getElementById('bmsg').textContent=d.msg;
+}
+
+function resetBreath(){
+  cycles=0; phase='idle';
+  if(phaseTimer) clearTimeout(phaseTimer);
+  document.getElementById('bar').style.width='0%';
+  document.getElementById('blbl').textContent='Ready';
+  document.getElementById('bsub').textContent='Tap to begin';
+  document.getElementById('cyc').textContent='0 of '+TOTAL+' breaths';
+  document.getElementById('breath-interact').style.display='flex';
+  document.getElementById('happy-end').style.display='none';
+  document.getElementById('s3sub').style.display='block';
+  setBlobSize(80,120);
+  document.getElementById('cb').style.cursor='pointer';
+}
+
+function goCalm(){ resetBreath(); show('s3'); }
+
+function setBlobSize(blobPx,ringPx){
+  const cb=document.getElementById('cb'),rm=document.getElementById('ring-mid');
+  cb.style.width=blobPx+'px'; cb.style.height=blobPx+'px';
+  rm.style.width=ringPx+'px'; rm.style.height=ringPx+'px';
+}
+
+function startBreathCycle(){
+  if(phase!=='idle'&&phase!=='hold-out')return;
+  phase='in';
+  document.getElementById('blbl').textContent='Breathe in';
+  document.getElementById('bsub').textContent='inhale slowly...';
+  setBlobSize(140,170);
+  phaseTimer=setTimeout(()=>{
+    phase='hold-in';
+    document.getElementById('blbl').textContent='Hold';
+    document.getElementById('bsub').textContent='hold gently...';
+    phaseTimer=setTimeout(()=>{
+      phase='out';
+      document.getElementById('blbl').textContent='Breathe out';
+      document.getElementById('bsub').textContent='exhale slowly...';
+      setBlobSize(70,100);
+      phaseTimer=setTimeout(()=>{
+        cycles++;
+        const pct=Math.round((cycles/TOTAL)*100);
+        document.getElementById('bar').style.width=pct+'%';
+        document.getElementById('cyc').textContent=cycles+' of '+TOTAL+' breaths';
+        if(cycles>=TOTAL){
+          phase='done';
+          document.getElementById('blbl').textContent='';
+          document.getElementById('bsub').textContent='';
+          document.getElementById('cb').style.cursor='default';
+          setTimeout(()=>{
+            document.getElementById('breath-interact').style.display='none';
+            document.getElementById('s3sub').style.display='none';
+            const he=document.getElementById('happy-end');
+            he.style.display='flex';
+            he.style.flexDirection='column';
+            he.style.alignItems='center';
+            const hb=document.getElementById('happy-blob');
+            hb.style.animation='none';
+            void hb.offsetWidth;
+            hb.style.animation='pc 3s ease-in-out infinite';
+          },600);
+        } else {
+          phase='hold-out';
+          document.getElementById('blbl').textContent='Ready';
+          document.getElementById('bsub').textContent='tap for next breath';
+          setBlobSize(80,120);
+        }
+      },4000);
+    },1500);
+  },4000);
+}
+
+document.getElementById('nxt').addEventListener('click',function(){
+  if(ans[qi]===undefined)return;
+  qi++;
+  if(qi<Qs.length){renderQ();}else{goReflect();}
+});
+document.getElementById('go-calm').addEventListener('click',goCalm);
+document.getElementById('cb').addEventListener('click',function(){
+  if(phase==='idle'||phase==='hold-out')startBreathCycle();
+});
+document.getElementById('again').addEventListener('click',function(){
+  qi=0; ans=[];
+  show('s1'); renderQ();
+});
+
+renderQ();
+})();
+</script>
+</body>
+</html>
